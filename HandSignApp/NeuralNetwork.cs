@@ -100,6 +100,11 @@ namespace HandSignApp
             desired_output[id] = data;
         }
 
+        public double GetOutputData(int id)
+        {
+            return oneuron[id].Value;
+        }
+
         private double Sigmoid(double data)
         {
             //if (data >= 20.00)
