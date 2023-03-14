@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Drawing;
 
 namespace HandSignApp
 {
@@ -15,7 +16,7 @@ namespace HandSignApp
         {
             InitializeComponent();
             weights_file = project_path + "\\weights.csv";
-            weights_file = project_path + "\\bias.csv";
+            bias_file = project_path + "\\bias.csv";
         }
 
         private void create_model_btn_Click(object sender, EventArgs e)
@@ -36,78 +37,79 @@ namespace HandSignApp
 
         private void train_btn_Click(object sender, EventArgs e)
         {
+            char[] letter = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y' };
             int epoch = Convert.ToInt32(epoch_num_txt.Text);
 
-            foreach (string sub_directory in Directory.GetDirectories(dataset_directory))
+            // CONVERT TRAINING DATA TO CSV
+            /*using (StreamWriter csvWriter = new StreamWriter(dataset_directory + "/0Train/train.csv"))
             {
-                Debug.WriteLine(sub_directory);
-                using (StreamWriter csvWriter = new StreamWriter(sub_directory + "/" + Path.GetFileName(sub_directory) + ".csv"))
+                int num = 1;
+                int len_test = 1;
+                int len = Directory.GetFiles(dataset_directory).Length;
+                foreach (string file in Directory.GetFiles(dataset_directory))
                 {
-                    int len_test = 1;
-                    int len = Directory.GetFiles(sub_directory).Length;
-                    foreach (string file in Directory.GetFiles(sub_directory))
+                    string[] filename_split = file.Split('\\');
+                    string name_only = filename_split[filename_split.Length - 1].Split('.')[0];
+                    Debug.WriteLine(num);
+                    Debug.WriteLine("File: " + name_only + ", ");
+                    for (int i = 0; i < letter.Length; i++)
                     {
-                        if (file == (sub_directory + "\\" + Path.GetFileName(sub_directory) + ".csv"))
-                            break;
-                        Debug.WriteLine(file);
-
-                        Bitmap bm = new Bitmap(file);
-                        for (int x = 0; x < bm.Height; x++)
+                        if (name_only.Contains(letter[i]))
                         {
-                            for (int y = 0; y < bm.Width; y++)
-                            {
-                                int grayscale_intensity = bm.GetPixel(x, y).R;
-                                csvWriter.Write(grayscale_intensity);
-
-                                if((y + (x * 28)) < 783)
-                                    csvWriter.Write(",");
-                            }
+                            Debug.WriteLine("OUTPUT: " + i);
+                            csvWriter.Write(i + ",");
                         }
-                        if(len_test < (len - 1))
-                            csvWriter.WriteLine();
-                        len_test++;
+                    }
+
+                    Bitmap bm = new Bitmap(file);
+                    for (int x = 0; x < bm.Height; x++)
+                    {
+                        for (int y = 0; y < bm.Width; y++)
+                        {
+                            int grayscale_intensity = bm.GetPixel(x, y).R;
+                            csvWriter.Write(grayscale_intensity);
+
+                            if ((y + (x * 28)) < 783)
+                                csvWriter.Write(",");
+                        }
+                    }
+                    if (len_test < (len))
+                        csvWriter.WriteLine();
+                    len_test++;
+                    num++;
+                }
+            }*/
+
+            for(int x = 0; x < epoch; x++)
+            {
+                Debug.WriteLine("Epoch: " + (x + 1));
+                using (StreamReader csvReader = new StreamReader(dataset_directory + "/0Train/train.csv"))
+                {
+                    int len = 1;
+                    while (!csvReader.EndOfStream)
+                    {
+                        Debug.WriteLine("Line: " + len);
+                        string[] values = csvReader.ReadLine().Split(',');
+                        int oid = Convert.ToInt32(values[0]);
+
+                        for (int i = 1; i < values.Length; i++)
+                            net.SetInputData((i - 1), Convert.ToDouble(values[i]));
+
+                        for (int i = 0; i < letter.Length; i++)
+                        {
+                            if (oid == i)
+                            {
+                                Debug.WriteLine("Letter: " + letter[i]);
+                                net.SetDesiredOutput(i, 1);
+                            }
+                            else
+                                net.SetDesiredOutput(i, 0);
+                        }
+                        net.Learn();
+                        len++;
                     }
                 }
             }
-
-            /*for (int i = 1; i <= epoch; i++)
-            {
-                Debug.WriteLine("Epoch: " + i);
-                int letter_num = 0;
-                foreach (string sub_directory in Directory.GetDirectories(dataset_directory))
-                {
-                    foreach (string file in Directory.GetFiles(sub_directory))
-                    {
-                        Bitmap bm = new Bitmap(file);
-                        for (int x = 0; x < bm.Height; x++)
-                        {
-                            for (int y = 0; y < bm.Width; y++)
-                            {
-                                int grayscale_intensity = bm.GetPixel(x, y).R;
-
-                                net.SetInputData(y + (x * 28), grayscale_intensity);
-                            }
-                        }
-
-                        for (int x = 0; x < 24; x++)
-                        {
-                            if (x == letter_num)
-                                net.SetDesiredOutput(x, 1);
-                            else
-                                net.SetDesiredOutput(x, 0);
-                        }
-                        net.Learn();
-                    }
-                    letter_num++;
-                }
-            }*/
-
-            //string letter = alphabet_box.SelectedItem.ToString();
-            /*using (StreamReader rd = new StreamReader(filepath_dataset))
-            {
-                string line = rd.ReadLine();
-                MessageBox.Show(line);
-            }*/
         }
 
         private void input_image_btn_Click(object sender, EventArgs e)
@@ -127,13 +129,14 @@ namespace HandSignApp
 
         private void test_btn_Click(object sender, EventArgs e)
         {
+            Debug.WriteLine(this.input_file);
             Bitmap bm = new Bitmap(this.input_file);
             for (int x = 0; x < bm.Height; x++)
             {
                 for (int y = 0; y < bm.Width; y++)
                 {
                     int grayscale_intensity = bm.GetPixel(x, y).R;
-
+                    Debug.WriteLine((y + (x * 28)) + ": " + grayscale_intensity);
                     net.SetInputData(y + (x * 28), grayscale_intensity);
                 }
             }

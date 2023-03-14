@@ -193,7 +193,7 @@
             epoch_num_txt.Name = "epoch_num_txt";
             epoch_num_txt.Size = new Size(133, 23);
             epoch_num_txt.TabIndex = 5;
-            epoch_num_txt.Text = "1000";
+            epoch_num_txt.Text = "5";
             // 
             // label2
             // 
